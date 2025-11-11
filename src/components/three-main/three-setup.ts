@@ -71,8 +71,8 @@ export function setupLights(scene: THREE.Scene) {
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
   scene.add(ambientLight)
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 7)
-  directionalLight.position.set(5, 5, 5)
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 5.94)
+  directionalLight.position.set(3, -3, 3)
   directionalLight.target.position.set(0, -3, 0)
   scene.add(directionalLight)
   scene.add(directionalLight.target)
