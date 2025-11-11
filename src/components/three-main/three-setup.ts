@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
+import * as CANNON from 'cannon-es'
 
 const DitherShader = {
   uniforms: {
@@ -108,7 +109,12 @@ export function threeSetup() {
   ditherPass.uniforms.resolution.value.set(window.innerWidth, window.innerHeight)
   composer.addPass(ditherPass)
 
-  return { scene, camera, renderer, composer, frustumSize }
+  // Physics world
+  const world = new CANNON.World()
+  world.gravity.set(0, -9.82, 0)
+  world.defaultContactMaterial.friction = 0.3
+
+  return { scene, camera, renderer, composer, frustumSize, world }
 }
 
 export function updateOrthographicCamera(
@@ -125,59 +131,102 @@ export function updateOrthographicCamera(
   camera.updateProjectionMatrix()
 }
 
-export async function loadAllModels(scene: THREE.Scene) {
+export async function loadAllModels(scene: THREE.Scene, world: CANNON.World) {
   const loader = new GLTFLoader()
-  const gltf = await loader.loadAsync('/3d/punchingbag/scene.gltf')
+  const gltf = await loader.loadAsync('/3d/punching-bag/punchbag_origin_fix.glb')
   gltf.scene.position.y = -3
   scene.add(gltf.scene)
 
-  let bagMeshObject = null
+  console.log('=== All objects in GLB ===')
+  gltf.scene.traverse((object) => {
+    console.log('Object:', object.name, 'Type:', object.type)
+  })
+  console.log('========================')
 
-  const targetMesh = gltf.scene.getObjectByName('Cylinder_0')
-  if (targetMesh) {
-    bagMeshObject = targetMesh.parent
-    console.log('Testing Cylinder_0 parent:', bagMeshObject?.name)
-    if (bagMeshObject) {
-      bagMeshObject.rotation.set(0, 0, 0)
+  let bagBone = null
+
+  const bone = gltf.scene.getObjectByName('Bone')
+  if (bone) {
+    bagBone = bone
+    console.log('Found bone:', bagBone?.name)
+    if (bagBone) {
+      bagBone.rotation.set(0.3, 0, 0.2)
     }
   }
 
+  const angularVelocity = new CANNON.Vec3(0, 0, 0)
+  const damping = 0.98
+  const gravity = 9.82
+  const length = 1.5
+
   return {
     punchingBag: gltf.scene,
-    bagMesh: bagMeshObject,
-    velocity: { x: 0, z: 0 },
-    angularVelocity: { x: 0, z: 0 },
+    bagBone,
+    angularVelocity,
+    damping,
+    gravity,
+    length,
   }
 }
 
 export function animate(
   composer: EffectComposer,
   directionalLight: THREE.DirectionalLight,
-  bagPhysics?: { bagMesh: any; angularVelocity: { x: number; z: number } },
+  world: CANNON.World,
+  bagPhysics?: {
+    bagBone: any
+    angularVelocity: CANNON.Vec3
+    damping: number
+    gravity: number
+    length: number
+  },
 ) {
-  requestAnimationFrame(() => animate(composer, directionalLight, bagPhysics))
+  requestAnimationFrame(() => animate(composer, directionalLight, world, bagPhysics))
 
   const time = Date.now() * 0.0005
   const swayAmount = 2
   directionalLight.position.x = 5 + Math.sin(time) * swayAmount
   directionalLight.position.z = 5 + Math.cos(time * 0.7) * swayAmount
 
-  if (bagPhysics && bagPhysics.bagMesh) {
-    const damping = 0.98
-    const restoring = 0.01
-    const gravity = 0.0005
+  if (bagPhysics && bagPhysics.bagBone) {
+    const { bagBone, angularVelocity, damping, gravity, length } = bagPhysics
+    const deltaTime = 1 / 60
 
-    bagPhysics.angularVelocity.x -= bagPhysics.bagMesh.rotation.x * restoring
-    bagPhysics.angularVelocity.z -= bagPhysics.bagMesh.rotation.z * restoring
+    const down = new THREE.Vector3(0, -1, 0)
+    const currentDown = down.clone().applyQuaternion(bagBone.quaternion)
 
-    bagPhysics.angularVelocity.x *= damping
-    bagPhysics.angularVelocity.z *= damping
+    const torqueAxis = new THREE.Vector3().crossVectors(currentDown, down)
+    const torqueMagnitude = (gravity / length) * torqueAxis.length()
 
-    bagPhysics.bagMesh.rotation.x += bagPhysics.angularVelocity.x
-    bagPhysics.bagMesh.rotation.z += bagPhysics.angularVelocity.z
+    if (torqueAxis.length() > 0.001) {
+      torqueAxis.normalize()
 
-    const impulse = Math.sin(time * 2) * 0.002
-    bagPhysics.angularVelocity.z += impulse
+      angularVelocity.x += torqueAxis.x * torqueMagnitude * deltaTime
+      angularVelocity.y += torqueAxis.y * torqueMagnitude * deltaTime
+      angularVelocity.z += torqueAxis.z * torqueMagnitude * deltaTime
+    }
+
+    angularVelocity.x *= damping
+    angularVelocity.y *= damping
+    angularVelocity.z *= damping
+
+    const angularSpeed = Math.sqrt(
+      angularVelocity.x * angularVelocity.x +
+        angularVelocity.y * angularVelocity.y +
+        angularVelocity.z * angularVelocity.z,
+    )
+
+    if (angularSpeed > 0.001) {
+      const axis = new THREE.Vector3(
+        angularVelocity.x / angularSpeed,
+        angularVelocity.y / angularSpeed,
+        angularVelocity.z / angularSpeed,
+      )
+      const angle = angularSpeed * deltaTime
+      const deltaQuat = new THREE.Quaternion().setFromAxisAngle(axis, angle)
+      bagBone.quaternion.multiplyQuaternions(deltaQuat, bagBone.quaternion)
+      bagBone.quaternion.normalize()
+    }
   }
 
   composer.render()
