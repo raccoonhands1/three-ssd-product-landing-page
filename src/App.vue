@@ -3,6 +3,7 @@ import { RouterLink, RouterView } from 'vue-router'
 import HeroText from './components/HeroText.vue'
 import Navbar from './components/Navbar.vue'
 import GetStartedButton from './components/GetStartedButton.vue'
+import ContactUsButton from './components/ContactUsButton.vue'
 </script>
 
 <template>
@@ -10,9 +11,10 @@ import GetStartedButton from './components/GetStartedButton.vue'
 
   <div id="hero">
     <div id="hero-lhs-wrapper">
-      <HeroText msg="MORE GROWTH. MORE CLIENTS. GUARANTEED." />
+      <HeroText />
       <div class="get-started-shrink">
         <GetStartedButton />
+        <ContactUsButton />
       </div>
     </div>
 

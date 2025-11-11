@@ -1,7 +1,6 @@
 <script setup lang="ts">
 const heroLines = [
-  { prefix: 'MORE', highlight: 'GROWTH.' },
-  { prefix: 'MORE', highlight: 'CLIENTS.' },
+  { prefix: 'WE FILL', highlight: 'GYMS.' },
   { prefix: 'GUARANTEED.', highlight: null },
 ]
 </script>
@@ -18,12 +17,12 @@ const heroLines = [
 <style scoped>
 h1 {
   font-weight: 500;
-  font-size: 8vh;
+  font-size: 10vh;
   text-align: right;
 }
 
 span {
   font-weight: 500;
-  font-size: 8vh;
+  font-size: 10vh;
 }
 </style>

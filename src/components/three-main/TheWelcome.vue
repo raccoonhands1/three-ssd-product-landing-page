@@ -2,16 +2,10 @@
 import { onMounted } from 'vue'
 import * as THREE from 'three'
 import * as CANNON from 'cannon-es'
-import {
-  threeSetup,
-  setupLights,
-  loadAllModels,
-  animate,
-  updateOrthographicCamera,
-} from './three-setup'
+import { threeSetup, setupLights, loadAllModels, animate } from './three-setup'
 
 onMounted(async () => {
-  const { scene, camera, renderer, composer, frustumSize, world } = threeSetup()
+  const { scene, camera, renderer, composer, world } = threeSetup()
   const { directionalLight } = setupLights(scene)
   const bagPhysics = await loadAllModels(scene, world)
 
@@ -21,7 +15,8 @@ onMounted(async () => {
   renderer.setSize(container.clientWidth, container.clientHeight)
   composer.setSize(container.clientWidth, container.clientHeight)
   container.appendChild(renderer.domElement)
-  updateOrthographicCamera(camera, container.clientWidth, container.clientHeight, frustumSize)
+  camera.aspect = container.clientWidth / container.clientHeight
+  camera.updateProjectionMatrix()
 
   const raycaster = new THREE.Raycaster()
   const mouse = new THREE.Vector2()
@@ -29,6 +24,7 @@ onMounted(async () => {
   let previousMouse = new THREE.Vector2()
   let hasMoved = false
   let dragVelocity = 0
+  const impulseStrength = 2.5
 
   container.addEventListener('mousedown', (event) => {
     isDragging = true
@@ -81,7 +77,6 @@ onMounted(async () => {
           const worldNormal = normal.clone()
           worldNormal.transformDirection(hit.object.matrixWorld)
 
-          const impulseStrength = 2.0
           bagPhysics.angularVelocity.x += worldNormal.z * impulseStrength
           bagPhysics.angularVelocity.z += worldNormal.x * -impulseStrength
         }

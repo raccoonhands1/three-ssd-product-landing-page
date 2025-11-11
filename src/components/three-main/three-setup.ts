@@ -72,7 +72,7 @@ export function setupLights(scene: THREE.Scene) {
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
   scene.add(ambientLight)
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 5.94)
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 3.5)
   directionalLight.position.set(3, -3, 3)
   directionalLight.target.position.set(0, -3, 0)
   scene.add(directionalLight)
@@ -90,9 +90,8 @@ export function setupLights(scene: THREE.Scene) {
 export function threeSetup() {
   const scene = new THREE.Scene()
 
-  const frustumSize = 9
-  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1000)
-  camera.position.set(3, 0.5, 3)
+  const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000)
+  camera.position.set(13, 1, 13)
   camera.lookAt(0, 0, 0)
 
   const renderer = new THREE.WebGLRenderer({
@@ -109,12 +108,11 @@ export function threeSetup() {
   ditherPass.uniforms.resolution.value.set(window.innerWidth, window.innerHeight)
   composer.addPass(ditherPass)
 
-  // Physics world
   const world = new CANNON.World()
   world.gravity.set(0, -9.82, 0)
   world.defaultContactMaterial.friction = 0.3
 
-  return { scene, camera, renderer, composer, frustumSize, world }
+  return { scene, camera, renderer, composer, world }
 }
 
 export function updateOrthographicCamera(
@@ -135,29 +133,25 @@ export async function loadAllModels(scene: THREE.Scene, world: CANNON.World) {
   const loader = new GLTFLoader()
   const gltf = await loader.loadAsync('/3d/punching-bag/punchbag_origin_fix.glb')
   gltf.scene.position.y = -3
-  scene.add(gltf.scene)
 
-  console.log('=== All objects in GLB ===')
-  gltf.scene.traverse((object) => {
-    console.log('Object:', object.name, 'Type:', object.type)
-  })
-  console.log('========================')
+  scene.add(gltf.scene)
 
   let bagBone = null
 
   const bone = gltf.scene.getObjectByName('Bone')
   if (bone) {
     bagBone = bone
-    console.log('Found bone:', bagBone?.name)
     if (bagBone) {
-      bagBone.rotation.set(0.3, 0, 0.2)
+      const up = new THREE.Vector3(0, 1, 0)
+      const initialRotation = new THREE.Quaternion().setFromAxisAngle(up, Math.PI)
+      bagBone.quaternion.copy(initialRotation)
     }
   }
 
-  const angularVelocity = new CANNON.Vec3(0, 0, 0)
+  const angularVelocity = new CANNON.Vec3(0, -3, 0)
   const damping = 0.98
   const gravity = 9.82
-  const length = 1.5
+  const length = 2
 
   return {
     punchingBag: gltf.scene,
