@@ -1,20 +1,6 @@
-<script setup lang="ts">
-const heroLines = [
-  { prefix: 'THIS IS', highlight: 'A TEMPLATE.' },
-  { prefix: 'BRO.', highlight: null },
-]
-</script>
+<script setup lang="ts"></script>
 
-<template>
-  <h1>
-    <template v-for="(line, index) in heroLines" :key="index"
-      >{{ line.prefix }} <span v-if="line.highlight" class="zda-blue">{{ line.highlight }}</span
-      ><br v-if="index < heroLines.length - 1"
-    /></template>
-  </h1>
-
-  <h2></h2>
-</template>
+<template></template>
 
 <style scoped>
 h1 {

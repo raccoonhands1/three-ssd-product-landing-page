@@ -89,8 +89,8 @@ export function setupLights(scene: THREE.Scene) {
 export function threeSetup() {
   const scene = new THREE.Scene()
 
-  const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000)
-  camera.position.set(13, 1, 13)
+  const camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 1000)
+  camera.position.set(2, 1, 3)
   camera.lookAt(0, 0, 0)
 
   const renderer = new THREE.WebGLRenderer({
@@ -110,24 +110,13 @@ export function threeSetup() {
   return { scene, camera, renderer, composer }
 }
 
-export function updateOrthographicCamera(
-  camera: THREE.OrthographicCamera,
-  width: number,
-  height: number,
-  frustumSize: number,
-) {
-  const aspect = width / height
-  camera.left = (-frustumSize * aspect) / 2
-  camera.right = (frustumSize * aspect) / 2
-  camera.top = frustumSize / 2
-  camera.bottom = -frustumSize / 2
-  camera.updateProjectionMatrix()
-}
-
 export async function loadAllModels(scene: THREE.Scene) {
   const loader = new GLTFLoader()
   const gltf = await loader.loadAsync('/3d/file_doll.glb')
-  gltf.scene.position.y = -3
+  gltf.scene.position.y = -2
+  gltf.scene.scale.x = 3
+  gltf.scene.scale.y = 3
+  gltf.scene.scale.z = 3
 
   scene.add(gltf.scene)
 

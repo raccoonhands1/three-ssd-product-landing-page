@@ -14,7 +14,7 @@
 
       <div id="nav-right">
         <div class="landscape-only">
-          <GetStartedButton />
+          <BuyNow />
         </div>
         <div class="portrait-only mobile-message">Coming Soon To Mobile</div>
       </div>
@@ -23,7 +23,7 @@
 </template>
 
 <script setup>
-import GetStartedButton from './GetStartedButton.vue'
+import BuyNow from './BuyNow.vue'
 
 const handleNavClick = (sectionId) => {
   const element = document.getElementById(sectionId)

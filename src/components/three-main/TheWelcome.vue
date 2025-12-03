@@ -60,33 +60,6 @@ onMounted(async () => {
     previousMouse.copy(mouse)
   })
 
-  container.addEventListener('mouseup', (event) => {
-    if (!hasMoved && bagPhysics.bagBone) {
-      const rect = container.getBoundingClientRect()
-      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
-      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
-
-      raycaster.setFromCamera(mouse, camera)
-      const intersects = raycaster.intersectObject(bagPhysics.punchingBag, true)
-
-      if (intersects.length > 0) {
-        const hit = intersects[0]
-        const normal = hit.face?.normal
-
-        if (normal) {
-          const worldNormal = normal.clone()
-          worldNormal.transformDirection(hit.object.matrixWorld)
-
-          bagPhysics.angularVelocity.x += worldNormal.z * impulseStrength
-          bagPhysics.angularVelocity.z += worldNormal.x * -impulseStrength
-        }
-      }
-    } else if (hasMoved && bagPhysics.bagBone) {
-      bagPhysics.angularVelocity.y = dragVelocity * 10
-    }
-    isDragging = false
-  })
-
   container.addEventListener('mouseleave', () => {
     isDragging = false
   })
@@ -99,7 +72,7 @@ onMounted(async () => {
 
 <style scoped>
 #viewport {
-  height: 100vh;
+  height: 100%;
   width: 100%;
 }
 </style>
