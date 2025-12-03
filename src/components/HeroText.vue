@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const heroLines = [
-  { prefix: 'WE FILL', highlight: 'GYMS.' },
-  { prefix: 'GUARANTEED.', highlight: null },
+  { prefix: 'THIS IS', highlight: 'A TEMPLATE.' },
+  { prefix: 'BRO.', highlight: null },
 ]
 </script>
 
@@ -12,6 +12,8 @@ const heroLines = [
       ><br v-if="index < heroLines.length - 1"
     /></template>
   </h1>
+
+  <h2></h2>
 </template>
 
 <style scoped>
@@ -24,5 +26,11 @@ h1 {
 span {
   font-weight: 500;
   font-size: 10vh;
+}
+
+h2 {
+  margin-top: -100px;
+  text-align: right;
+  font-size: 2rem;
 }
 </style>
