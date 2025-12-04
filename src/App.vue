@@ -7,12 +7,9 @@ import ContactUsButton from './components/ContactUsButton.vue'
 
 <template>
   <div id="hero">
-    <div id="hero-lhs-wrapper">
-      <HeroText />
-      <div class="get-started-shrink">
-        <BuyNow />
-        <ContactUsButton />
-      </div>
+    <div class="get-started-shrink">
+      <BuyNow />
+      <ContactUsButton />
     </div>
 
     <RouterView />
@@ -21,28 +18,22 @@ import ContactUsButton from './components/ContactUsButton.vue'
 
 <style scoped>
 #hero {
-  width: 100vw;
+  width: 100%;
   height: 100vh;
   display: flex;
   padding: 0;
   margin: 0;
+  position: relative;
 
-  #hero-lhs-wrapper {
+  .get-started-shrink {
     display: flex;
-    flex-direction: column;
-    justify-content: center;
-    margin-top: 2rem;
-    margin-bottom: 2rem;
-    gap: 8rem;
-
-    .get-started-shrink {
-      width: min;
-      align-self: flex-end;
-    }
+    flex-direction: row;
+    gap: 1rem;
+    position: absolute;
+    left: 50%;
+    bottom: 2rem;
+    transform: translateX(-50%);
+    z-index: 10;
   }
-}
-
-#hero > :deep(*) {
-  flex: 1;
 }
 </style>

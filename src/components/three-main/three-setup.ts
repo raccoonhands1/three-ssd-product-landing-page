@@ -2,88 +2,41 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
-import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
-
-const DitherShader = {
-  uniforms: {
-    tDiffuse: { value: null },
-    resolution: { value: new THREE.Vector2() },
-  },
-  vertexShader: `
-    varying vec2 vUv;
-    void main() {
-      vUv = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }
-  `,
-  fragmentShader: `
-    uniform sampler2D tDiffuse;
-    uniform vec2 resolution;
-    varying vec2 vUv;
-
-    #define DITHER_LEVELS 3.
-
-    float dither( float v, vec2 fragCoord )
-    {
-        float x = v * DITHER_LEVELS;
-
-        int ditherLevel = int(floor(fract( x ) * 4.));
-
-        float dither = 0.;
-
-        int ix = int(fragCoord.x);
-        int iy = int(fragCoord.y);
-
-        if (ditherLevel == 1) {
-            if (ix % 4 == (2*iy) % 4) {
-                dither = 1.;
-            }
-        }
-
-        else if (ditherLevel == 2) {
-            if (ix % 2 != iy % 2) {
-                dither = 1.;
-            }
-        }
-
-        else if (ditherLevel == 3) {
-            if (ix % 4 != (2*iy) % 4) {
-                dither = 1.;
-            }
-        }
-
-        return floor(x + dither) / DITHER_LEVELS;
-    }
-
-    void main() {
-      vec2 fragCoord = vUv * resolution;
-      vec4 color = texture2D(tDiffuse, vUv);
-
-      float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-      gray = dither(gray, fragCoord);
-
-      gl_FragColor = vec4(vec3(gray), color.a);
-    }
-  `,
-}
 
 export function setupLights(scene: THREE.Scene) {
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
+  // Soft ambient fill
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.3)
   scene.add(ambientLight)
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 3.5)
-  directionalLight.position.set(3, -3, 3)
-  directionalLight.target.position.set(0, -3, 0)
-  scene.add(directionalLight)
-  scene.add(directionalLight.target)
+  // Key light - main light source (front, slightly above and to the side)
+  const keyLight = new THREE.DirectionalLight(0xffffff, 2.0)
+  keyLight.position.set(5, 8, 5)
+  keyLight.target.position.set(0, 0, 0)
+  scene.add(keyLight)
+  scene.add(keyLight.target)
 
-  const backLight = new THREE.DirectionalLight(0xffffff, 0.8)
-  backLight.position.set(-5, 3, -5)
-  backLight.target.position.set(0, -3, 0)
-  scene.add(backLight)
-  scene.add(backLight.target)
+  // Fill light - softer light to fill in shadows (opposite side of key)
+  const fillLight = new THREE.DirectionalLight(0xffffff, 0.8)
+  fillLight.position.set(-5, 3, 3)
+  fillLight.target.position.set(0, 0, 0)
+  scene.add(fillLight)
+  scene.add(fillLight.target)
 
-  return { ambientLight, directionalLight, backLight }
+  // Rim/Back light - creates separation from background (behind and above)
+  const rimLight = new THREE.DirectionalLight(0xffffff, 1.5)
+  rimLight.position.set(0, 5, -5)
+  rimLight.target.position.set(0, 0, 0)
+  scene.add(rimLight)
+  scene.add(rimLight.target)
+
+  // Top light - adds highlights from above
+  const topLight = new THREE.DirectionalLight(0xffffff, 0.6)
+  topLight.position.set(0, 10, 0)
+  topLight.target.position.set(0, 0, 0)
+  scene.add(topLight)
+  scene.add(topLight.target)
+
+  return { ambientLight, keyLight, fillLight, rimLight, topLight }
 }
 
 export function threeSetup() {
@@ -103,10 +56,6 @@ export function threeSetup() {
   const renderPass = new RenderPass(scene, camera)
   composer.addPass(renderPass)
 
-  const ditherPass = new ShaderPass(DitherShader)
-  ditherPass.uniforms.resolution.value.set(window.innerWidth, window.innerHeight)
-  composer.addPass(ditherPass)
-
   return { scene, camera, renderer, composer }
 }
 
@@ -114,9 +63,7 @@ export async function loadAllModels(scene: THREE.Scene) {
   const loader = new GLTFLoader()
   const gltf = await loader.loadAsync('/3d/file_doll.glb')
   gltf.scene.position.y = -2
-  gltf.scene.scale.x = 3
-  gltf.scene.scale.y = 3
-  gltf.scene.scale.z = 3
+  gltf.scene.scale.setScalar(3)
 
   scene.add(gltf.scene)
 
@@ -145,13 +92,10 @@ export async function loadAllModels(scene: THREE.Scene) {
   }
 }
 
-export function animate(composer: EffectComposer, directionalLight: THREE.DirectionalLight) {
-  requestAnimationFrame(() => animate(composer, directionalLight))
+export function animate(composer: EffectComposer, model: THREE.Group) {
+  requestAnimationFrame(() => animate(composer, model))
 
-  const time = Date.now() * 0.0005
-  const swayAmount = 2
-  directionalLight.position.x = 5 + Math.sin(time) * swayAmount
-  directionalLight.position.z = 5 + Math.cos(time * 0.7) * swayAmount
+  model.rotation.y += 0.005
 
   composer.render()
 }

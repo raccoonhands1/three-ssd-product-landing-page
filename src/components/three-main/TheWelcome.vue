@@ -5,9 +5,9 @@ import * as CANNON from 'cannon-es'
 import { threeSetup, setupLights, loadAllModels, animate } from './three-setup'
 
 onMounted(async () => {
-  const { scene, camera, renderer, composer, world } = threeSetup()
-  const { directionalLight } = setupLights(scene)
-  const bagPhysics = await loadAllModels(scene, world)
+  const { scene, camera, renderer, composer } = threeSetup()
+  setupLights(scene)
+  const bagPhysics = await loadAllModels(scene)
 
   const container = document.getElementById('viewport')
   if (!container) return
@@ -64,7 +64,7 @@ onMounted(async () => {
     isDragging = false
   })
 
-  animate(composer, directionalLight, world, bagPhysics)
+  animate(composer, bagPhysics.punchingBag)
 })
 </script>
 

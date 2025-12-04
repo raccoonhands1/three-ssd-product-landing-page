@@ -71,3 +71,23 @@
 .btn-obscure:hover {
   box-shadow: rgba(0, 0, 0, 0.3) 0px 1px 2px 0px inset;
 }
+
+.icon-text-container {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.svg-white {
+  height: 2rem;
+  width: 2rem;
+  color: white;
+  fill: white;
+}
+
+.svg-dark {
+  height: 2rem;
+  width: 2rem;
+  color: var(--dark);
+  fill: var(--dark);
+}
