@@ -39,7 +39,7 @@ export function threeSetup() {
   const scene = new THREE.Scene()
 
   const camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 1000)
-  camera.position.set(4, 1, 4)
+  camera.position.set(0, 0, 5)
   camera.lookAt(0, 0, 0)
 
   const renderer = new THREE.WebGLRenderer({
@@ -51,6 +51,33 @@ export function threeSetup() {
   const composer = new EffectComposer(renderer)
   const renderPass = new RenderPass(scene, camera)
   composer.addPass(renderPass)
+
+  // Add test cubes at varying depths
+  const cubeGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5)
+
+  // Foreground cube (closest) - Red
+  const foregroundCube = new THREE.Mesh(
+    cubeGeometry,
+    new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true })
+  )
+  foregroundCube.position.set(-2, 1, 1)
+  scene.add(foregroundCube)
+
+  // Mid-ground cube - Green
+  const midgroundCube = new THREE.Mesh(
+    cubeGeometry,
+    new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true })
+  )
+  midgroundCube.position.set(2, 1, 0)
+  scene.add(midgroundCube)
+
+  // Background cube (farthest) - Blue
+  const backgroundCube = new THREE.Mesh(
+    cubeGeometry,
+    new THREE.MeshBasicMaterial({ color: 0x0000ff, wireframe: true })
+  )
+  backgroundCube.position.set(0, -1, -2)
+  scene.add(backgroundCube)
 
   const cameraObj = mainSheet.object('Camera', cameraConfig)
   const modelObj = mainSheet.object('Model', modelConfig)

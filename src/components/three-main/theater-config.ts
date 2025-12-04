@@ -6,9 +6,9 @@ export const mainSheet = theaterProject.sheet('Main')
 
 export const cameraConfig = {
   position: types.compound({
-    x: types.number(4, { range: [-10, 10] }),
-    y: types.number(1, { range: [-5, 5] }),
-    z: types.number(4, { range: [-10, 10] })
+    x: types.number(0, { range: [-10, 10] }),
+    y: types.number(0, { range: [-5, 5] }),
+    z: types.number(5, { range: [-10, 10] })
   }),
   lookAt: types.compound({
     x: types.number(0, { range: [-5, 5] }),
