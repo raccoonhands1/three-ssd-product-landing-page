@@ -3,9 +3,11 @@ import { RouterLink, RouterView } from 'vue-router'
 import HeroText from './components/HeroText.vue'
 import BuyNow from './components/BuyNow.vue'
 import ContactUsButton from './components/ContactUsButton.vue'
+import Navbar from './components/Navbar.vue'
 </script>
 
 <template>
+  <Navbar />
   <div id="hero">
     <div class="get-started-shrink">
       <BuyNow />
@@ -35,5 +37,9 @@ import ContactUsButton from './components/ContactUsButton.vue'
     transform: translateX(-50%);
     z-index: 10;
   }
+}
+
+#hero > :deep(*) {
+  flex: 1;
 }
 </style>

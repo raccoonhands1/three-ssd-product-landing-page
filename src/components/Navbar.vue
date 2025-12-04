@@ -2,21 +2,7 @@
   <nav>
     <div id="nav-wrapper">
       <div id="nav-logo">
-        <div class="red-logo-placeholder"></div>
-      </div>
-
-      <div id="nav-middle">
-        <button @click="handleNavClick('features')">Features</button>
-        <button @click="handleNavClick('pricing')">Pricing</button>
-        <button @click="handleNavClick('comparison')">Services</button>
-        <button @click="handleNavClick('final-call-to-action')">Contact</button>
-      </div>
-
-      <div id="nav-right">
-        <div class="landscape-only">
-          <BuyNow />
-        </div>
-        <div class="portrait-only mobile-message">Coming Soon To Mobile</div>
+        <img src="/logo.png" id="logo"></img>
       </div>
     </div>
   </nav>
@@ -45,6 +31,13 @@ const handleNavClick = (sectionId) => {
   --navbar-border-color: #ffffff4d;
   --default-button-padding: 0.8rem;
   font-family: 'Jost', sans-serif;
+}
+
+#logo {
+  height: 2.5rem;
+  margin-top: 0;
+  padding-top: 0;
+  transform: translateY(-0.75rem);
 }
 
 .large-box-shadow {
@@ -153,11 +146,6 @@ nav {
   align-items: center;
 }
 
-.red-logo-placeholder {
-  width: 100px;
-  height: 40px;
-  background-color: red;
-}
 
 #nav-middle {
   display: flex;

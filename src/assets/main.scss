@@ -55,6 +55,13 @@
   background-color: black;
   height: 2.5rem;
   border: none;
+
+  transition: all 150ms;
+  &:hover {
+    background-color: #212121;
+    transform: translateY(2px);
+    box-shadow: none;
+  }
 }
 
 .btn-obscure {
@@ -66,6 +73,7 @@
   cursor: pointer;
   border: none;
   background: transparent;
+  transition: all 250ms;
 }
 
 .btn-obscure:hover {
