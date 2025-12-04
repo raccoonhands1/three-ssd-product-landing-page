@@ -61,7 +61,7 @@ function applySoftLimit(value: number, limit: number): number {
 // Head tracking state
 const targetHeadOffset = { x: 0, y: 0, z: 0 }
 const currentHeadOffset = { x: 0, y: 0, z: 0 }
-let theaterCameraPosition = { x: 0, y: 0, z: 5 }
+let theaterCameraPosition = { x: 0, y: 0, z: -1 }
 let theaterCameraLookAt = { x: 0, y: 0, z: 0 }
 
 onMounted(async () => {
@@ -69,7 +69,7 @@ onMounted(async () => {
     studio.initialize()
   }
 
-  const { scene, camera, renderer, composer, theaterObjects } = threeSetup()
+  const { scene, camera, renderer, composer, theaterObjects, fallingCubes } = threeSetup()
   const lights = setupLights(scene)
   const bagPhysics = await loadAllModels(scene)
 
@@ -135,23 +135,10 @@ onMounted(async () => {
     theaterCameraLookAt = { ...values.lookAt }
   })
 
+  // Theater.js model transformations disabled - only head tracking (mouse drag) rotation active
   theaterObjects.modelObj.onValuesChange((values) => {
-    if (bagPhysics.punchingBag) {
-      bagPhysics.punchingBag.rotation.set(values.rotation.x, values.rotation.y, values.rotation.z)
-      bagPhysics.punchingBag.position.set(values.position.x, values.position.y, values.position.z)
-    }
-    if (bagPhysics.wireframeModel) {
-      bagPhysics.wireframeModel.rotation.set(
-        values.rotation.x,
-        values.rotation.y,
-        values.rotation.z,
-      )
-      bagPhysics.wireframeModel.position.set(
-        values.position.x,
-        values.position.y,
-        values.position.z,
-      )
-    }
+    // Transformations commented out to prevent Theater.js from controlling the model
+    // Only mouse drag rotation (head tracking) is active now
   })
 
   theaterObjects.lightsObj.onValuesChange((values) => {
@@ -233,19 +220,19 @@ onMounted(async () => {
         console.log('Face position:', { x: faceEvent.x, y: faceEvent.y })
       }
 
-      // Calculate offset from canvas center (like the reference implementation)
+      // Calculate offset from canvas center
       // Face at center (160, 120) = no offset
-      // Face moves right (x > 160) = camera pans left (negative)
-      // Face moves left (x < 160) = camera pans right (positive)
+      // Face moves right (x > 160) = camera pans right (positive)
+      // Face moves left (x < 160) = camera pans left (negative)
       const offsetX = ((faceEvent.x - CANVAS_CENTER_X) * FACE_TRACKING_SCALE.x) / 100
       const offsetY = ((faceEvent.y - CANVAS_CENTER_Y) * FACE_TRACKING_SCALE.y) / 100
 
       // Apply soft limits with gradual falloff
-      const limitedX = applySoftLimit(-offsetX, CAMERA_LIMITS.x)
-      const limitedY = applySoftLimit(-offsetY, CAMERA_LIMITS.y)
+      const limitedX = applySoftLimit(offsetX, CAMERA_LIMITS.x)
+      const limitedY = applySoftLimit(-offsetY, CAMERA_LIMITS.y) // Invert Y for natural movement
 
-      targetHeadOffset.x = limitedX // Inverted with soft limits
-      targetHeadOffset.y = limitedY // Inverted with soft limits
+      targetHeadOffset.x = limitedX
+      targetHeadOffset.y = limitedY
       targetHeadOffset.z = 0 // No depth tracking with face tracking
     }
   })
@@ -268,16 +255,24 @@ onMounted(async () => {
       theaterCameraPosition.z + currentHeadOffset.z,
     )
 
-    // Calculate lookAt point: 10 units in front of base camera position (along -Z axis)
-    // This creates rotation around a distant point rather than panning
-    const lookAtDistance = 10
-    const lookAtPoint = new THREE.Vector3(
-      theaterCameraPosition.x,
-      theaterCameraPosition.y,
-      theaterCameraPosition.z - lookAtDistance,
-    )
+    camera.lookAt(0, 0, 100)
 
-    camera.lookAt(lookAtPoint)
+    // Animate falling cubes
+    fallingCubes.forEach((cube) => {
+      // Move down
+      cube.mesh.position.y -= cube.speed
+
+      // Rotate for visual interest
+      cube.mesh.rotation.x += 0.01
+      cube.mesh.rotation.y += 0.01
+
+      // Reset to top when cube falls below -5
+      if (cube.mesh.position.y < -5) {
+        cube.mesh.position.y = cube.resetY
+        cube.mesh.position.x = (Math.random() - 0.5) * 10
+        cube.mesh.position.z = Math.random() * 10 + 1 // 1 to 11 (in front of camera)
+      }
+    })
 
     composer.render()
     requestAnimationFrame(tick)

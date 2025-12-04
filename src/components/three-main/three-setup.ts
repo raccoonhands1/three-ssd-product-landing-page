@@ -39,8 +39,7 @@ export function threeSetup() {
   const scene = new THREE.Scene()
 
   const camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 1000)
-  camera.position.set(0, 0, 5)
-  camera.lookAt(0, 0, 0)
+  camera.position.set(0, 0, -1)
 
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
@@ -52,32 +51,40 @@ export function threeSetup() {
   const renderPass = new RenderPass(scene, camera)
   composer.addPass(renderPass)
 
-  // Add test cubes at varying depths
-  const cubeGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5)
+  // Create falling cubes
+  const cubeGeometry = new THREE.BoxGeometry(0.3, 0.3, 0.3)
+  const fallingCubes: Array<{ mesh: THREE.Mesh; speed: number; resetY: number }> = []
 
-  // Foreground cube (closest) - Red
-  const foregroundCube = new THREE.Mesh(
-    cubeGeometry,
-    new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true })
-  )
-  foregroundCube.position.set(-2, 1, 1)
-  scene.add(foregroundCube)
+  const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff]
 
-  // Mid-ground cube - Green
-  const midgroundCube = new THREE.Mesh(
-    cubeGeometry,
-    new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true })
-  )
-  midgroundCube.position.set(2, 1, 0)
-  scene.add(midgroundCube)
+  // Create 20 falling cubes at various positions
+  for (let i = 0; i < 20; i++) {
+    const cube = new THREE.Mesh(
+      cubeGeometry,
+      new THREE.MeshBasicMaterial({
+        color: colors[Math.floor(Math.random() * colors.length)],
+        wireframe: true,
+      }),
+    )
 
-  // Background cube (farthest) - Blue
-  const backgroundCube = new THREE.Mesh(
-    cubeGeometry,
-    new THREE.MeshBasicMaterial({ color: 0x0000ff, wireframe: true })
-  )
-  backgroundCube.position.set(0, -1, -2)
-  scene.add(backgroundCube)
+    // Random position (in front of camera looking at +Z)
+    cube.position.x = (Math.random() - 0.5) * 10 // -5 to 5
+    cube.position.y = Math.random() * 15 + 5 // 5 to 20 (start high)
+    cube.position.z = Math.random() * 10 + 1 // 1 to 11 (in front of camera)
+
+    // Random rotation
+    cube.rotation.x = Math.random() * Math.PI * 2
+    cube.rotation.y = Math.random() * Math.PI * 2
+    cube.rotation.z = Math.random() * Math.PI * 2
+
+    scene.add(cube)
+
+    fallingCubes.push({
+      mesh: cube,
+      speed: 0.02 + Math.random() * 0.03, // Random fall speed
+      resetY: 20 + Math.random() * 5, // Where to reset when they fall below
+    })
+  }
 
   const cameraObj = mainSheet.object('Camera', cameraConfig)
   const modelObj = mainSheet.object('Model', modelConfig)
@@ -88,16 +95,17 @@ export function threeSetup() {
     camera,
     renderer,
     composer,
-    theaterObjects: { cameraObj, modelObj, lightsObj }
+    theaterObjects: { cameraObj, modelObj, lightsObj },
+    fallingCubes,
   }
 }
 
 export async function loadAllModels(scene: THREE.Scene) {
   const loader = new GLTFLoader()
   const gltf = await loader.loadAsync('/3d/windows_file_folder.glb')
-  gltf.scene.position.y = -2
+  gltf.scene.position.set(0, 0, 2) // Camera at z=-1 looking at z=10, model positioned in front
   gltf.scene.scale.setScalar(0.01)
-  gltf.scene.rotation.y = Math.PI / 2
+  gltf.scene.rotation.set(0, 0, 0) // Reset all rotations
 
   scene.add(gltf.scene)
 
@@ -107,17 +115,13 @@ export async function loadAllModels(scene: THREE.Scene) {
   const bone = gltf.scene.getObjectByName('Bone')
   if (bone) {
     bagBone = bone
-    if (bagBone) {
-      const up = new THREE.Vector3(0, 1, 0)
-      const initialRotation = new THREE.Quaternion().setFromAxisAngle(up, Math.PI)
-      bagBone.quaternion.copy(initialRotation)
-    }
+    // Reset bone rotation - only allow head tracking (mouse drag) rotation
   }
 
   const outlineGroup = gltf.scene.clone()
-  outlineGroup.position.y = -2
+  outlineGroup.position.set(0, 0, 2) // Camera at z=-1 looking at z=10, model positioned in front
   outlineGroup.scale.setScalar(0.01 * 1.001)
-  outlineGroup.rotation.y = Math.PI / 2
+  outlineGroup.rotation.set(0, 0, 0) // Reset all rotations
 
   const replacementMap = new Map<THREE.Object3D, THREE.LineSegments>()
 
@@ -149,28 +153,9 @@ export async function loadAllModels(scene: THREE.Scene) {
     outlineGroup.traverse((child) => {
       if (child.name === 'Bone') {
         outlineBone = child
+        // Reset bone rotation - only allow head tracking (mouse drag) rotation
       }
     })
-
-    if (outlineBone) {
-      const up = new THREE.Vector3(0, 1, 0)
-      const initialRotation = new THREE.Quaternion().setFromAxisAngle(up, Math.PI)
-      outlineBone.quaternion.copy(initialRotation)
-    }
-  }
-
-  if (bagBone) {
-    outlineGroup.traverse((child) => {
-      if (child.name === 'Bone') {
-        outlineBone = child
-      }
-    })
-
-    if (outlineBone) {
-      const up = new THREE.Vector3(0, 1, 0)
-      const initialRotation = new THREE.Quaternion().setFromAxisAngle(up, Math.PI)
-      outlineBone.quaternion.copy(initialRotation)
-    }
   }
 
   scene.add(outlineGroup)
