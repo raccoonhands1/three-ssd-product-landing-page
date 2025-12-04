@@ -51,13 +51,11 @@ export function threeSetup() {
   const renderPass = new RenderPass(scene, camera)
   composer.addPass(renderPass)
 
-  // Create falling cubes
   const cubeGeometry = new THREE.BoxGeometry(0.3, 0.3, 0.3)
   const fallingCubes: Array<{ mesh: THREE.Mesh; speed: number; resetY: number }> = []
 
   const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff]
 
-  // Create 20 falling cubes at various positions
   for (let i = 0; i < 20; i++) {
     const cube = new THREE.Mesh(
       cubeGeometry,
@@ -67,12 +65,10 @@ export function threeSetup() {
       }),
     )
 
-    // Random position (in front of camera looking at +Z)
-    cube.position.x = (Math.random() - 0.5) * 10 // -5 to 5
-    cube.position.y = Math.random() * 15 + 5 // 5 to 20 (start high)
-    cube.position.z = Math.random() * 10 + 1 // 1 to 11 (in front of camera)
+    cube.position.x = (Math.random() - 0.5) * 10
+    cube.position.y = Math.random() * 15 + 5
+    cube.position.z = Math.random() * 10 + 1
 
-    // Random rotation
     cube.rotation.x = Math.random() * Math.PI * 2
     cube.rotation.y = Math.random() * Math.PI * 2
     cube.rotation.z = Math.random() * Math.PI * 2
@@ -81,8 +77,8 @@ export function threeSetup() {
 
     fallingCubes.push({
       mesh: cube,
-      speed: 0.02 + Math.random() * 0.03, // Random fall speed
-      resetY: 20 + Math.random() * 5, // Where to reset when they fall below
+      speed: 0.02 + Math.random() * 0.03,
+      resetY: 20 + Math.random() * 5
     })
   }
 
@@ -103,9 +99,9 @@ export function threeSetup() {
 export async function loadAllModels(scene: THREE.Scene) {
   const loader = new GLTFLoader()
   const gltf = await loader.loadAsync('/3d/windows_file_folder.glb')
-  gltf.scene.position.set(0, 0, 2) // Camera at z=-1 looking at z=10, model positioned in front
+  gltf.scene.position.set(0, 0, 2)
   gltf.scene.scale.setScalar(0.01)
-  gltf.scene.rotation.set(0, 0, 0) // Reset all rotations
+  gltf.scene.rotation.set(0, 0, 0)
 
   scene.add(gltf.scene)
 
@@ -115,13 +111,12 @@ export async function loadAllModels(scene: THREE.Scene) {
   const bone = gltf.scene.getObjectByName('Bone')
   if (bone) {
     bagBone = bone
-    // Reset bone rotation - only allow head tracking (mouse drag) rotation
   }
 
   const outlineGroup = gltf.scene.clone()
-  outlineGroup.position.set(0, 0, 2) // Camera at z=-1 looking at z=10, model positioned in front
+  outlineGroup.position.set(0, 0, 2)
   outlineGroup.scale.setScalar(0.01 * 1.001)
-  outlineGroup.rotation.set(0, 0, 0) // Reset all rotations
+  outlineGroup.rotation.set(0, 0, 0)
 
   const replacementMap = new Map<THREE.Object3D, THREE.LineSegments>()
 
@@ -132,7 +127,6 @@ export async function loadAllModels(scene: THREE.Scene) {
       const lineMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 1 })
       const lineSegments = new THREE.LineSegments(edges, lineMaterial)
 
-      // copy transformations
       lineSegments.position.copy(mesh.position)
       lineSegments.rotation.copy(mesh.rotation)
       lineSegments.scale.copy(mesh.scale)
@@ -153,17 +147,19 @@ export async function loadAllModels(scene: THREE.Scene) {
     outlineGroup.traverse((child) => {
       if (child.name === 'Bone') {
         outlineBone = child
-        // Reset bone rotation - only allow head tracking (mouse drag) rotation
       }
     })
   }
 
   scene.add(outlineGroup)
 
+  const modelPosition = { x: 0, y: 0, z: 2 }
+
   return {
     punchingBag: gltf.scene,
     wireframeModel: outlineGroup,
     bagBone,
     outlineBone,
+    position: modelPosition
   }
 }
