@@ -22,9 +22,9 @@ const showPopup = ref(false)
     </svg>
   </button>
 
-  <PopupWrapper v-model="showPopup" title="Shopping Cart">
+  <PopupWrapper v-model="showPopup" title="Thanks for Your Interest!">
     <p>
-      We appreciate your interest in this product! It's currently being manufactured. We'll let you
+      We think it's a good idea too! This product is currently being manufactured. We'll let you
       know when it's ready to ship!
     </p>
   </PopupWrapper>

@@ -23,7 +23,7 @@ const showPopup = ref(false)
   </button>
 
   <PopupWrapper v-model="showPopup" title="Get Notified">
-    <p>Stay updated with our latest news and releases.</p>
+    <p>Stay updated on price changes and similar products</p>
   </PopupWrapper>
 </template>
 
