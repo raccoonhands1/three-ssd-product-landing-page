@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import * as THREE from 'three'
-import * as CANNON from 'cannon-es'
-import { threeSetup, setupLights, loadAllModels, animate } from './three-setup'
+import studio from '@theatre/studio'
+import { threeSetup, setupLights, loadAllModels } from './three-setup'
+import { mainSheet } from './theater-config'
 
 onMounted(async () => {
-  const { scene, camera, renderer, composer } = threeSetup()
-  setupLights(scene)
+  if (import.meta.env.DEV) {
+    studio.initialize()
+  }
+
+  const { scene, camera, renderer, composer, theaterObjects } = threeSetup()
+  const lights = setupLights(scene)
   const bagPhysics = await loadAllModels(scene)
 
   const container = document.getElementById('viewport')
@@ -18,25 +23,19 @@ onMounted(async () => {
   camera.aspect = container.clientWidth / container.clientHeight
   camera.updateProjectionMatrix()
 
-  const raycaster = new THREE.Raycaster()
   const mouse = new THREE.Vector2()
   let isDragging = false
   let previousMouse = new THREE.Vector2()
-  let hasMoved = false
-  let dragVelocity = 0
-  const impulseStrength = 2.5
 
   container.addEventListener('mousedown', (event) => {
     isDragging = true
-    hasMoved = false
-    dragVelocity = 0
     const rect = container.getBoundingClientRect()
     previousMouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
     previousMouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
   })
 
   container.addEventListener('mousemove', (event) => {
-    if (!isDragging || !bagPhysics.bagBone) return
+    if (!isDragging) return
 
     const rect = container.getBoundingClientRect()
     mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
@@ -44,18 +43,17 @@ onMounted(async () => {
 
     const deltaX = mouse.x - previousMouse.x
 
-    if (Math.abs(deltaX) > 0.001) {
-      hasMoved = true
-    }
-
-    dragVelocity = deltaX
-
     const rotationSpeed = 2.0
     const up = new THREE.Vector3(0, 1, 0)
     const rotationQuat = new THREE.Quaternion().setFromAxisAngle(up, deltaX * rotationSpeed)
 
-    bagPhysics.bagBone.quaternion.multiplyQuaternions(rotationQuat, bagPhysics.bagBone.quaternion)
-    bagPhysics.angularVelocity.set(0, 0, 0)
+    if (bagPhysics.bagBone) {
+      bagPhysics.bagBone.quaternion.multiplyQuaternions(rotationQuat, bagPhysics.bagBone.quaternion)
+    }
+
+    if (bagPhysics.outlineBone) {
+      bagPhysics.outlineBone.quaternion.multiplyQuaternions(rotationQuat, bagPhysics.outlineBone.quaternion)
+    }
 
     previousMouse.copy(mouse)
   })
@@ -64,7 +62,78 @@ onMounted(async () => {
     isDragging = false
   })
 
-  animate(composer, bagPhysics.punchingBag)
+  container.addEventListener('mouseup', () => {
+    isDragging = false
+  })
+
+  theaterObjects.cameraObj.onValuesChange((values) => {
+    camera.position.set(values.position.x, values.position.y, values.position.z)
+    camera.lookAt(values.lookAt.x, values.lookAt.y, values.lookAt.z)
+  })
+
+  theaterObjects.modelObj.onValuesChange((values) => {
+    if (bagPhysics.punchingBag) {
+      bagPhysics.punchingBag.rotation.set(
+        values.rotation.x,
+        values.rotation.y,
+        values.rotation.z
+      )
+      bagPhysics.punchingBag.position.set(
+        values.position.x,
+        values.position.y,
+        values.position.z
+      )
+    }
+    if (bagPhysics.wireframeModel) {
+      bagPhysics.wireframeModel.rotation.set(
+        values.rotation.x,
+        values.rotation.y,
+        values.rotation.z
+      )
+      bagPhysics.wireframeModel.position.set(
+        values.position.x,
+        values.position.y,
+        values.position.z
+      )
+    }
+  })
+
+  theaterObjects.lightsObj.onValuesChange((values) => {
+    lights.keyLight.intensity = values.keyLight.intensity
+    lights.keyLight.position.set(
+      values.keyLight.position.x,
+      values.keyLight.position.y,
+      values.keyLight.position.z
+    )
+
+    lights.fillLight.intensity = values.fillLight.intensity
+    lights.fillLight.position.set(
+      values.fillLight.position.x,
+      values.fillLight.position.y,
+      values.fillLight.position.z
+    )
+
+    lights.rimLight.intensity = values.rimLight.intensity
+    lights.rimLight.position.set(
+      values.rimLight.position.x,
+      values.rimLight.position.y,
+      values.rimLight.position.z
+    )
+
+    lights.topLight.intensity = values.topLight.intensity
+    lights.topLight.position.set(
+      values.topLight.position.x,
+      values.topLight.position.y,
+      values.topLight.position.z
+    )
+  })
+
+
+  const tick = () => {
+    composer.render()
+    requestAnimationFrame(tick)
+  }
+  tick()
 })
 </script>
 

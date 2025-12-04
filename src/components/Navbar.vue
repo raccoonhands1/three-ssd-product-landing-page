@@ -109,7 +109,7 @@ nav {
   position: fixed;
   display: flex;
   justify-content: center;
-  z-index: 1000;
+  z-index: 5;
   left: 0;
   top: 0;
 }
