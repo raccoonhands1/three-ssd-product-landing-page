@@ -1,5 +1,12 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import PopupWrapper from './PopupWrapper.vue'
+
+const showPopup = ref(false)
+</script>
+
 <template>
-  <button class="btn-intrusive padding-fix">
+  <button class="btn-intrusive padding-fix" @click="showPopup = true">
     <svg
       xmlns="http://www.w3.org/2000/svg"
       x="0px"
@@ -14,6 +21,13 @@
       ></path>
     </svg>
   </button>
+
+  <PopupWrapper v-model="showPopup" title="Shopping Cart">
+    <p>
+      We appreciate your interest in this product! It's currently being manufactured. We'll let you
+      know when it's ready to ship!
+    </p>
+  </PopupWrapper>
 </template>
 
 <style scoped>

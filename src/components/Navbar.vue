@@ -21,15 +21,6 @@ const handleNavClick = (sectionId) => {
 
 <style scoped>
 * {
-  --background-color: #fefefe;
-  --foreground-color: #f5f5f5;
-  --grey: #939393;
-  --dark: #000;
-  --greyish: #f8f8f8;
-  --greyisher: #0006;
-  --navbar-color: #f5f5f533;
-  --navbar-border-color: #ffffff4d;
-  --default-button-padding: 0.8rem;
   font-family: 'Jost', sans-serif;
 }
 

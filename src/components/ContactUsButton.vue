@@ -1,5 +1,12 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import PopupWrapper from './PopupWrapper.vue'
+
+const showPopup = ref(false)
+</script>
+
 <template>
-  <button class="btn-obscure padding-fix">
+  <button class="btn-obscure padding-fix" @click="showPopup = true">
     <svg
       xmlns="http://www.w3.org/2000/svg"
       x="0px"
@@ -14,9 +21,11 @@
       ></path>
     </svg>
   </button>
-</template>
 
-<script setup lang="ts"></script>
+  <PopupWrapper v-model="showPopup" title="Get Notified">
+    <p>Stay updated with our latest news and releases.</p>
+  </PopupWrapper>
+</template>
 
 <style scoped>
 .padding-fix {

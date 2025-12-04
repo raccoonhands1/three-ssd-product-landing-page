@@ -20,7 +20,8 @@
     "theatrejs": "^0.3.2",
     "three": "^0.181.1",
     "vue": "^3.5.22",
-    "vue-router": "^4.6.3"
+    "vue-router": "^4.6.3",
+    "vue-shortkey": "^3.1.7"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.2",
