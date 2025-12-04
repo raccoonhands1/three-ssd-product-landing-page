@@ -26,7 +26,7 @@ declare global {
 
 const FACE_TRACKING_SCALE = {
   x: 3,
-  y: 2
+  y: 2,
 }
 
 const CAMERA_SMOOTHING = 0.05
@@ -36,7 +36,7 @@ const CANVAS_CENTER_Y = 120
 
 const CAMERA_LIMITS = {
   x: 2.0,
-  y: 1.5
+  y: 1.5,
 }
 
 function applySoftLimit(value: number, limit: number): number {
@@ -54,6 +54,8 @@ const targetHeadOffset = { x: 0, y: 0, z: 0 }
 const currentHeadOffset = { x: 0, y: 0, z: 0 }
 let theaterCameraPosition = { x: 0, y: 0, z: -1 }
 let theaterCameraLookAt = { x: 0, y: 0, z: 0 }
+let glbOpacity = 1.0
+let viewportElement: HTMLElement | null = null
 
 onMounted(async () => {
   if (import.meta.env.DEV) {
@@ -66,6 +68,8 @@ onMounted(async () => {
 
   const container = document.getElementById('viewport')
   if (!container) return
+
+  viewportElement = container
 
   renderer.setSize(container.clientWidth, container.clientHeight)
   composer.setSize(container.clientWidth, container.clientHeight)
@@ -180,7 +184,7 @@ onMounted(async () => {
             detectionInterval: 20,
             fadeVideo: false,
             calcAngles: true,
-            headPosition: false
+            headPosition: false,
           })
 
           htracker.init(videoElement, canvasElement, false)
@@ -221,6 +225,35 @@ onMounted(async () => {
     console.log('Headtrackr status:', statusEvent.status)
   })
 
+  const handleScroll = () => {
+    const scrollTop = window.scrollY || document.documentElement.scrollTop
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight
+    const scrollPercent = (scrollTop / docHeight) * 100
+
+    if (scrollPercent >= 50 && scrollPercent <= 70) {
+      glbOpacity = 1 - (scrollPercent - 50) / 20
+      const progress = (scrollPercent - 50) / 20
+      if (viewportElement) {
+        const r = Math.round(255 - (255 - 37) * progress)
+        const g = Math.round(255 - (255 - 37) * progress)
+        const b = Math.round(255 - (255 - 37) * progress)
+        viewportElement.style.backgroundColor = `rgb(${r}, ${g}, ${b})`
+      }
+    } else if (scrollPercent > 70) {
+      glbOpacity = 0
+      if (viewportElement) {
+        viewportElement.style.backgroundColor = '#252525'
+      }
+    } else {
+      glbOpacity = 1
+      if (viewportElement) {
+        viewportElement.style.backgroundColor = '#ffffff'
+      }
+    }
+  }
+
+  window.addEventListener('scroll', handleScroll)
+
   const tick = () => {
     currentHeadOffset.x += (targetHeadOffset.x - currentHeadOffset.x) * CAMERA_SMOOTHING
     currentHeadOffset.y += (targetHeadOffset.y - currentHeadOffset.y) * CAMERA_SMOOTHING
@@ -229,7 +262,7 @@ onMounted(async () => {
     camera.position.set(
       theaterCameraPosition.x + currentHeadOffset.x,
       theaterCameraPosition.y + currentHeadOffset.y,
-      theaterCameraPosition.z + currentHeadOffset.z
+      theaterCameraPosition.z + currentHeadOffset.z,
     )
 
     camera.lookAt(0, 0, 100)
@@ -238,15 +271,24 @@ onMounted(async () => {
       bagPhysics.punchingBag.position.set(
         bagPhysics.position.x,
         bagPhysics.position.y,
-        bagPhysics.position.z
+        bagPhysics.position.z,
       )
     }
     if (bagPhysics.wireframeModel && bagPhysics.position) {
       bagPhysics.wireframeModel.position.set(
         bagPhysics.position.x,
         bagPhysics.position.y,
-        bagPhysics.position.z
+        bagPhysics.position.z,
       )
+    }
+
+    if (bagPhysics.punchingBag) {
+      bagPhysics.punchingBag.traverse((child) => {
+        if (child.isMesh && child.material) {
+          child.material.opacity = glbOpacity
+          child.material.transparent = true
+        }
+      })
     }
 
     fallingCubes.forEach((cube) => {

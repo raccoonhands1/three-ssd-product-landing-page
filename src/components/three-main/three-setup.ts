@@ -103,6 +103,12 @@ export async function loadAllModels(scene: THREE.Scene) {
   gltf.scene.scale.setScalar(0.01)
   gltf.scene.rotation.set(0, 0, 0)
 
+  gltf.scene.traverse((child) => {
+    if (child.isMesh && child.material) {
+      child.material.transparent = true
+    }
+  })
+
   scene.add(gltf.scene)
 
   let bagBone = null

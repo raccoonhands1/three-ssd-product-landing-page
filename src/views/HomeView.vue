@@ -16,5 +16,10 @@ main {
   width: 100%;
   height: 100%;
   z-index: 10;
+  pointer-events: none;
+}
+
+main > * {
+  pointer-events: auto;
 }
 </style>

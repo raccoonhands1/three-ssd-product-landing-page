@@ -16,6 +16,7 @@ import Navbar from './components/Navbar.vue'
 
     <RouterView />
   </div>
+  <div class="content-section"></div>
 </template>
 
 <style scoped>
@@ -41,5 +42,13 @@ import Navbar from './components/Navbar.vue'
 
 #hero > :deep(*) {
   flex: 1;
+}
+
+.content-section {
+  height: 100vh;
+  width: 100%;
+  background: linear-gradient(180deg, transparent 80%, #00000030 100%);
+  position: relative;
+  z-index: 1;
 }
 </style>
