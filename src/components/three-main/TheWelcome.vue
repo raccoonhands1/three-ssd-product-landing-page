@@ -1,61 +1,15 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import * as THREE from 'three'
 import studio from '@theatre/studio'
 import { threeSetup, setupLights, loadAllModels } from './three-setup'
 import { mainSheet } from './theater-config'
-
-interface FacetrackingEvent extends Event {
-  x: number
-  y: number
-  width: number
-  height: number
-  angle: number
-  detection: string
-}
-
-interface HeadtrackrStatusEvent extends Event {
-  status: string
-}
-
-declare global {
-  interface Window {
-    headtrackr: any
-  }
-}
-
-const FACE_TRACKING_SCALE = {
-  x: 3,
-  y: 2,
-}
-
-const CAMERA_SMOOTHING = 0.05
-
-const CANVAS_CENTER_X = 160
-const CANVAS_CENTER_Y = 120
-
-const CAMERA_LIMITS = {
-  x: 2.0,
-  y: 1.5,
-}
-
-function applySoftLimit(value: number, limit: number): number {
-  const absValue = Math.abs(value)
-  const sign = Math.sign(value)
-
-  const k = 3.0
-  const normalized = absValue / limit
-  const limited = limit * (1 - Math.exp(-k * normalized))
-
-  return sign * limited
-}
-
-const targetHeadOffset = { x: 0, y: 0, z: 0 }
-const currentHeadOffset = { x: 0, y: 0, z: 0 }
+import { HeadTracker } from '@/modules/head-tracking'
 let theaterCameraPosition = { x: 0, y: 0, z: -1 }
 let theaterCameraLookAt = { x: 0, y: 0, z: 0 }
 let glbOpacity = 1.0
 let viewportElement: HTMLElement | null = null
+let headTracker: HeadTracker | null = null
 
 onMounted(async () => {
   if (import.meta.env.DEV) {
@@ -166,64 +120,13 @@ onMounted(async () => {
     )
   })
 
-  const videoElement = document.getElementById('headtracker-video') as HTMLVideoElement
-  const canvasElement = document.getElementById('headtracker-canvas') as HTMLCanvasElement
-
-  if (videoElement && canvasElement && window.headtrackr) {
-    try {
-      navigator.mediaDevices
-        .getUserMedia({ video: true })
-        .then((stream) => {
-          videoElement.srcObject = stream
-          videoElement.play()
-
-          const htracker = new window.headtrackr.Tracker({
-            ui: false,
-            smoothing: true,
-            retryDetection: true,
-            detectionInterval: 20,
-            fadeVideo: false,
-            calcAngles: true,
-            headPosition: false,
-          })
-
-          htracker.init(videoElement, canvasElement, false)
-          htracker.start()
-
-          console.log('Head tracking initialized')
-        })
-        .catch((error) => {
-          console.warn('Camera access denied or unavailable:', error)
-        })
-    } catch (error) {
-      console.warn('Head tracking failed to initialize:', error)
-    }
+  headTracker = new HeadTracker('headtracker-video', 'headtracker-canvas')
+  try {
+    await headTracker.init()
+    headTracker.start()
+  } catch (error) {
+    console.warn('Head tracking failed to initialize:', error)
   }
-
-  document.addEventListener('facetrackingEvent', (event) => {
-    const faceEvent = event as FacetrackingEvent
-
-    if (faceEvent.detection === 'CS') {
-      if (Math.random() < 0.02) {
-        console.log('Face position:', { x: faceEvent.x, y: faceEvent.y })
-      }
-
-      const offsetX = ((faceEvent.x - CANVAS_CENTER_X) * FACE_TRACKING_SCALE.x) / 100
-      const offsetY = ((faceEvent.y - CANVAS_CENTER_Y) * FACE_TRACKING_SCALE.y) / 100
-
-      const limitedX = applySoftLimit(offsetX, CAMERA_LIMITS.x)
-      const limitedY = applySoftLimit(-offsetY, CAMERA_LIMITS.y)
-
-      targetHeadOffset.x = limitedX
-      targetHeadOffset.y = limitedY
-      targetHeadOffset.z = 0
-    }
-  })
-
-  document.addEventListener('headtrackrStatus', (event) => {
-    const statusEvent = event as HeadtrackrStatusEvent
-    console.log('Headtrackr status:', statusEvent.status)
-  })
 
   const handleScroll = () => {
     const scrollTop = window.scrollY || document.documentElement.scrollTop
@@ -255,15 +158,21 @@ onMounted(async () => {
   window.addEventListener('scroll', handleScroll)
 
   const tick = () => {
-    currentHeadOffset.x += (targetHeadOffset.x - currentHeadOffset.x) * CAMERA_SMOOTHING
-    currentHeadOffset.y += (targetHeadOffset.y - currentHeadOffset.y) * CAMERA_SMOOTHING
-    currentHeadOffset.z += (targetHeadOffset.z - currentHeadOffset.z) * CAMERA_SMOOTHING
-
-    camera.position.set(
-      theaterCameraPosition.x + currentHeadOffset.x,
-      theaterCameraPosition.y + currentHeadOffset.y,
-      theaterCameraPosition.z + currentHeadOffset.z,
-    )
+    if (headTracker) {
+      headTracker.update()
+      const offset = headTracker.getOffset()
+      camera.position.set(
+        theaterCameraPosition.x + offset.x,
+        theaterCameraPosition.y + offset.y,
+        theaterCameraPosition.z + offset.z,
+      )
+    } else {
+      camera.position.set(
+        theaterCameraPosition.x,
+        theaterCameraPosition.y,
+        theaterCameraPosition.z,
+      )
+    }
 
     camera.lookAt(0, 0, 100)
 
@@ -308,6 +217,12 @@ onMounted(async () => {
     requestAnimationFrame(tick)
   }
   tick()
+})
+
+onUnmounted(() => {
+  if (headTracker) {
+    headTracker.destroy()
+  }
 })
 </script>
 
