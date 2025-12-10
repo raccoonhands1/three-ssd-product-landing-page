@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import * as THREE from 'three'
 import studio from '@theatre/studio'
 import { threeSetup, setupLights, loadAllModels } from './three-setup'
@@ -10,6 +10,7 @@ let theaterCameraLookAt = { x: 0, y: 0, z: 0 }
 let glbOpacity = 1.0
 let viewportElement: HTMLElement | null = null
 let headTracker: HeadTracker | null = null
+const bagPhysics = ref<any>(null)
 
 onMounted(async () => {
   if (import.meta.env.DEV) {
@@ -18,7 +19,7 @@ onMounted(async () => {
 
   const { scene, camera, renderer, composer, theaterObjects, fallingCubes } = threeSetup()
   const lights = setupLights(scene)
-  const bagPhysics = await loadAllModels(scene)
+  bagPhysics.value = await loadAllModels(scene)
 
   const container = document.getElementById('viewport')
   if (!container) return
@@ -55,14 +56,14 @@ onMounted(async () => {
     const up = new THREE.Vector3(0, 1, 0)
     const rotationQuat = new THREE.Quaternion().setFromAxisAngle(up, deltaX * rotationSpeed)
 
-    if (bagPhysics.bagBone) {
-      bagPhysics.bagBone.quaternion.multiplyQuaternions(rotationQuat, bagPhysics.bagBone.quaternion)
+    if (bagPhysics.value.bagBone) {
+      bagPhysics.value.bagBone.quaternion.multiplyQuaternions(rotationQuat, bagPhysics.value.bagBone.quaternion)
     }
 
-    if (bagPhysics.outlineBone) {
-      bagPhysics.outlineBone.quaternion.multiplyQuaternions(
+    if (bagPhysics.value.outlineBone) {
+      bagPhysics.value.outlineBone.quaternion.multiplyQuaternions(
         rotationQuat,
-        bagPhysics.outlineBone.quaternion,
+        bagPhysics.value.outlineBone.quaternion,
       )
     }
 
@@ -83,10 +84,10 @@ onMounted(async () => {
   })
 
   theaterObjects.modelObj.onValuesChange((values) => {
-    if (bagPhysics.position) {
-      bagPhysics.position.x = values.position.x
-      bagPhysics.position.y = values.position.y
-      bagPhysics.position.z = values.position.z
+    if (bagPhysics.value.position) {
+      bagPhysics.value.position.x = values.position.x
+      bagPhysics.value.position.y = values.position.y
+      bagPhysics.value.position.z = values.position.z
     }
   })
 
@@ -142,15 +143,91 @@ onMounted(async () => {
         const b = Math.round(255 - (255 - 37) * progress)
         viewportElement.style.backgroundColor = `rgb(${r}, ${g}, ${b})`
       }
+
+      if (bagPhysics.value.wireframeModel) {
+        bagPhysics.value.wireframeModel.traverse((child: any) => {
+          if (child.isLineSegments && child.material) {
+            const r = Math.round(0 + (255 - 0) * progress)
+            const g = Math.round(0 + (255 - 0) * progress)
+            const b = Math.round(0 + (255 - 0) * progress)
+            child.material.color.setRGB(r / 255, g / 255, b / 255)
+          }
+        })
+      }
+      if (bagPhysics.value.labelLines) {
+        bagPhysics.value.labelLines.forEach((labelLine: any) => {
+          if (labelLine.line.material) {
+            const r = Math.round(0 + (255 - 0) * progress)
+            const g = Math.round(0 + (255 - 0) * progress)
+            const b = Math.round(0 + (255 - 0) * progress)
+            labelLine.line.material.color.setRGB(r / 255, g / 255, b / 255)
+            labelLine.line.material.opacity = progress
+          }
+        })
+      }
+      if (bagPhysics.value.labeledObjects) {
+        bagPhysics.value.labeledObjects.forEach((item: any, index: number) => {
+          const label = document.getElementById(`label-${index}`)
+          if (label) {
+            label.style.opacity = `${progress}`
+          }
+        })
+      }
     } else if (scrollPercent > 70) {
       glbOpacity = 0
       if (viewportElement) {
         viewportElement.style.backgroundColor = '#252525'
       }
+      if (bagPhysics.value.wireframeModel) {
+        bagPhysics.value.wireframeModel.traverse((child: any) => {
+          if (child.isLineSegments && child.material) {
+            child.material.color.setRGB(1, 1, 1)
+          }
+        })
+      }
+      if (bagPhysics.value.labelLines) {
+        bagPhysics.value.labelLines.forEach((labelLine: any) => {
+          if (labelLine.line.material) {
+            labelLine.line.material.color.setRGB(1, 1, 1)
+            labelLine.line.material.opacity = 1
+          }
+        })
+      }
+      if (bagPhysics.value.labeledObjects) {
+        bagPhysics.value.labeledObjects.forEach((item: any, index: number) => {
+          const label = document.getElementById(`label-${index}`)
+          if (label) {
+            label.style.opacity = '1'
+          }
+        })
+      }
     } else {
       glbOpacity = 1
       if (viewportElement) {
         viewportElement.style.backgroundColor = '#ffffff'
+      }
+      if (bagPhysics.value.wireframeModel) {
+        bagPhysics.value.wireframeModel.traverse((child: any) => {
+          if (child.isLineSegments && child.material) {
+            child.material.color.setRGB(0, 0, 0)
+          }
+        })
+      }
+      if (bagPhysics.value.labelLines) {
+        bagPhysics.value.labelLines.forEach((labelLine: any) => {
+          if (labelLine.line.material) {
+            labelLine.line.material.color.setRGB(0, 0, 0)
+            labelLine.line.material.opacity = 0
+          }
+        })
+      }
+      if (bagPhysics.value.labeledObjects) {
+        bagPhysics.value.labeledObjects.forEach((item: any, index: number) => {
+          const label = document.getElementById(`label-${index}`)
+          if (label) {
+            label.style.opacity = '0'
+          }
+        })
       }
     }
   }
@@ -176,23 +253,65 @@ onMounted(async () => {
 
     camera.lookAt(0, 0, 100)
 
-    if (bagPhysics.punchingBag && bagPhysics.position) {
-      bagPhysics.punchingBag.position.set(
-        bagPhysics.position.x,
-        bagPhysics.position.y,
-        bagPhysics.position.z,
+    if (bagPhysics.value.labeledObjects && bagPhysics.value.labelLines) {
+      bagPhysics.value.labeledObjects.forEach((item: any, index: number) => {
+        const worldPos = new THREE.Vector3()
+        item.object.getWorldPosition(worldPos)
+        const labelPos = worldPos.clone().add(item.offset)
+
+        const screenPos = labelPos.clone().project(camera)
+        const label = document.getElementById(`label-${index}`)
+        if (label && container) {
+          let x = (screenPos.x * 0.5 + 0.5) * container.clientWidth
+          let y = (-(screenPos.y) * 0.5 + 0.5) * container.clientHeight
+
+          const labelWidth = label.offsetWidth
+          const labelHeight = label.offsetHeight
+          const padding = 10
+
+          x = Math.max(padding + labelWidth / 2, Math.min(container.clientWidth - padding - labelWidth / 2, x))
+          y = Math.max(padding + labelHeight / 2, Math.min(container.clientHeight - padding - labelHeight / 2, y))
+
+          label.style.left = `${x}px`
+          label.style.top = `${y}px`
+
+          const clampedScreenX = (x / container.clientWidth) * 2 - 1
+          const clampedScreenY = -(y / container.clientHeight) * 2 + 1
+          const clampedScreenPos = new THREE.Vector3(clampedScreenX, clampedScreenY, screenPos.z)
+          const clampedWorldPos = clampedScreenPos.unproject(camera)
+
+          if (bagPhysics.value.labelLines[index]) {
+            const labelLine = bagPhysics.value.labelLines[index]
+            const positions = labelLine.line.geometry.attributes.position.array as Float32Array
+            positions[0] = worldPos.x
+            positions[1] = worldPos.y
+            positions[2] = worldPos.z
+            positions[3] = clampedWorldPos.x
+            positions[4] = clampedWorldPos.y
+            positions[5] = clampedWorldPos.z
+            labelLine.line.geometry.attributes.position.needsUpdate = true
+          }
+        }
+      })
+    }
+
+    if (bagPhysics.value.punchingBag && bagPhysics.value.position) {
+      bagPhysics.value.punchingBag.position.set(
+        bagPhysics.value.position.x,
+        bagPhysics.value.position.y,
+        bagPhysics.value.position.z,
       )
     }
-    if (bagPhysics.wireframeModel && bagPhysics.position) {
-      bagPhysics.wireframeModel.position.set(
-        bagPhysics.position.x,
-        bagPhysics.position.y,
-        bagPhysics.position.z,
+    if (bagPhysics.value.wireframeModel && bagPhysics.value.position) {
+      bagPhysics.value.wireframeModel.position.set(
+        bagPhysics.value.position.x,
+        bagPhysics.value.position.y,
+        bagPhysics.value.position.z,
       )
     }
 
-    if (bagPhysics.punchingBag) {
-      bagPhysics.punchingBag.traverse((child) => {
+    if (bagPhysics.value.punchingBag) {
+      bagPhysics.value.punchingBag.traverse((child) => {
         if (child.isMesh && child.material) {
           child.material.opacity = glbOpacity
           child.material.transparent = true
@@ -227,7 +346,16 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div id="viewport"></div>
+  <div id="viewport">
+    <div
+      v-for="(item, index) in bagPhysics?.labeledObjects || []"
+      :key="index"
+      :id="`label-${index}`"
+      class="floating-label"
+    >
+      {{ item.name }}
+    </div>
+  </div>
   <video id="headtracker-video" autoplay style="display: none"></video>
   <canvas id="headtracker-canvas" width="320" height="240" style="display: none"></canvas>
 </template>
@@ -236,5 +364,21 @@ onUnmounted(() => {
 #viewport {
   height: 100%;
   width: 100%;
+  position: relative;
+}
+
+.floating-label {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #000;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 </style>

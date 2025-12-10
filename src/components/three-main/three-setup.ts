@@ -78,7 +78,7 @@ export function threeSetup() {
     fallingCubes.push({
       mesh: cube,
       speed: 0.02 + Math.random() * 0.03,
-      resetY: 20 + Math.random() * 5
+      resetY: 20 + Math.random() * 5,
     })
   }
 
@@ -98,12 +98,12 @@ export function threeSetup() {
 
 export async function loadAllModels(scene: THREE.Scene) {
   const loader = new GLTFLoader()
-  const gltf = await loader.loadAsync('/3d/windows_file_folder.glb')
-  gltf.scene.position.set(0, 0, 2)
-  gltf.scene.scale.setScalar(0.01)
-  gltf.scene.rotation.set(0, 0, 0)
+  const gltf = await loader.loadAsync('/3d/three-d-test-bone.glb')
+  gltf.scene.position.set(0, 3, 0)
+  gltf.scene.scale.setScalar(10)
+  gltf.scene.rotation.set(0, Math.PI / 2 - Math.PI / 12, (3 * Math.PI) / 2 + Math.PI / 24)
 
-  gltf.scene.traverse((child) => {
+  gltf.scene.traverse((child: any) => {
     if (child.isMesh && child.material) {
       child.material.transparent = true
     }
@@ -114,19 +114,49 @@ export async function loadAllModels(scene: THREE.Scene) {
   let bagBone = null
   let outlineBone = null
 
-  const bone = gltf.scene.getObjectByName('Bone')
+  const bone = gltf.scene.getObjectByName('BONE')
   if (bone) {
     bagBone = bone
   }
 
+  const labeledObjects = [
+    { object: gltf.scene.getObjectByName('SSD'), name: 'SSD Storage', offset: new THREE.Vector3(2, 1, 0) },
+    { object: gltf.scene.getObjectByName('BOARD'), name: 'Main Board', offset: new THREE.Vector3(-2, 0.5, 0) },
+    { object: gltf.scene.getObjectByName('ENCLOSURE'), name: 'Enclosure', offset: new THREE.Vector3(2, -1, 0) },
+    { object: bone, name: 'Drive Mount', offset: new THREE.Vector3(-2, -0.5, 0) },
+    { object: gltf.scene.getObjectByName('Default'), name: 'Chassis', offset: new THREE.Vector3(2, 0, 1) },
+    { object: gltf.scene.getObjectByName('Part 1'), name: 'Housing', offset: new THREE.Vector3(-2, 1, 1) },
+    { object: gltf.scene.getObjectByName('sm3zs067u310amr1200'), name: 'Component', offset: new THREE.Vector3(0, -1.5, 0) },
+  ]
+
+  const labelLines: Array<{ line: THREE.Line; object: THREE.Object3D; offset: THREE.Vector3 }> = []
+
+  labeledObjects.forEach((item) => {
+    if (item.object) {
+      const lineMaterial = new THREE.LineBasicMaterial({
+        color: 0x000000,
+        linewidth: 2,
+        transparent: true,
+        opacity: 0
+      })
+      const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(0, 0, 0),
+      ])
+      const line = new THREE.Line(lineGeometry, lineMaterial)
+      scene.add(line)
+      labelLines.push({ line, object: item.object, offset: item.offset })
+    }
+  })
+
   const outlineGroup = gltf.scene.clone()
-  outlineGroup.position.set(0, 0, 2)
-  outlineGroup.scale.setScalar(0.01 * 1.001)
-  outlineGroup.rotation.set(0, 0, 0)
+  outlineGroup.position.set(0, 3, 0)
+  outlineGroup.scale.setScalar(10 * 1.001)
+  outlineGroup.rotation.set(0, Math.PI / 2 - Math.PI / 12, (3 * Math.PI) / 2 + Math.PI / 24)
 
   const replacementMap = new Map<THREE.Object3D, THREE.LineSegments>()
 
-  outlineGroup.traverse((child) => {
+  outlineGroup.traverse((child: any) => {
     if ((child as THREE.Mesh).isMesh) {
       const mesh = child as THREE.Mesh
       const edges = new THREE.EdgesGeometry(mesh.geometry, 15)
@@ -150,7 +180,7 @@ export async function loadAllModels(scene: THREE.Scene) {
   }
 
   if (bagBone) {
-    outlineGroup.traverse((child) => {
+    outlineGroup.traverse((child: any) => {
       if (child.name === 'Bone') {
         outlineBone = child
       }
@@ -166,6 +196,8 @@ export async function loadAllModels(scene: THREE.Scene) {
     wireframeModel: outlineGroup,
     bagBone,
     outlineBone,
-    position: modelPosition
+    position: modelPosition,
+    labeledObjects: labeledObjects.filter((item) => item.object),
+    labelLines,
   }
 }
